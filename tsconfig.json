@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es5",
+        "sourceMap": true,
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "Node",
+        "strictNullChecks": true,
+        "lib": [
+            "es2015",
+            "dom"
+        ],
+        "declaration": true,
+        "outDir": "dist",
+        "skipLibCheck": true
+    },
+    "files": [
+        "./src/ATR.ts",
+        "./src/ASR.ts",
+        "./src/AXR.ts",
+        "./ATR.ts",
+        "./ASR.ts"
+    ]
+}

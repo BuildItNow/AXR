@@ -1,0 +1,20 @@
+{
+  "name": "axr",
+  "version": "1.0.3",
+  "description": "Asynchronous stream development util based on redux.",
+  "main": "index.js",
+  "author": "Yang G",
+  "license": "MIT",
+  "devDependencies": {
+    "tslint": "^5.11.0",
+    "typescript": "^3.1.1"
+  },
+  "scripts": {
+    "tslint": "tslint ./src/*.ts",
+    "compile": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BuildItNow/AXR"
+  }
+}
