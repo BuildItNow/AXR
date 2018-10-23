@@ -106,10 +106,16 @@ enum EAsync {
     FAILED,
 }
 
-const actionCreatorFactory = () => {
+export const actionCreatorFactory = (prefix: string = ''): ASRActionCreator => {
+    if (prefix) {
+        prefix += '_';
+    }
+
     const actions: { [key: string]: boolean } = {};
 
     const creator: any = (type: string, __async) => {
+        type = prefix + type;
+ 
         if (actions[type]) {
             throw new Error('Action [' + type + '] duplicated!');
         }
@@ -141,6 +147,8 @@ const actionCreatorFactory = () => {
     };
 
     const asyncCreator = (type: string) => {
+        type = prefix + type;
+
         if (actions[type]) {
             throw new Error('Action [' + type + '] duplicated!');
         }
@@ -162,7 +170,7 @@ const actionCreatorFactory = () => {
     return creator;
 };
 
-export const actionCreator: ASRActionCreator = actionCreatorFactory() as any;
+export const actionCreator: ASRActionCreator = actionCreatorFactory();
 
 const reducerCreatorImpl = (initState, action, reducer) => {
     return (state, actionData) => {

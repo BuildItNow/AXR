@@ -56,9 +56,14 @@ var EAsync;
     EAsync[EAsync["DONE"] = 2] = "DONE";
     EAsync[EAsync["FAILED"] = 3] = "FAILED";
 })(EAsync || (EAsync = {}));
-var actionCreatorFactory = function () {
+exports.actionCreatorFactory = function (prefix) {
+    if (prefix === void 0) { prefix = ''; }
+    if (prefix) {
+        prefix += '_';
+    }
     var actions = {};
     var creator = function (type, __async) {
+        type = prefix + type;
         if (actions[type]) {
             throw new Error('Action [' + type + '] duplicated!');
         }
@@ -84,6 +89,7 @@ var actionCreatorFactory = function () {
         return action;
     };
     var asyncCreator = function (type) {
+        type = prefix + type;
         if (actions[type]) {
             throw new Error('Action [' + type + '] duplicated!');
         }
@@ -99,7 +105,7 @@ var actionCreatorFactory = function () {
     creator.async = asyncCreator;
     return creator;
 };
-exports.actionCreator = actionCreatorFactory();
+exports.actionCreator = exports.actionCreatorFactory();
 var reducerCreatorImpl = function (initState, action, reducer) {
     return function (state, actionData) {
         if (state === undefined) {

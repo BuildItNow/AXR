@@ -22,9 +22,14 @@ var stateGetter = function () {
 var actionDispatch = function (actionData) {
     return AXR_1.axrGetOptions().dispatch(actionData);
 };
-var actionCreatorFactory = function () {
+var actionCreatorFactory = function (prefix) {
+    if (prefix === void 0) { prefix = ''; }
+    if (prefix) {
+        prefix += '_';
+    }
     var actions = {};
     var asyncCreator = function (type, thunk) {
+        type = prefix + type;
         if (actions[type]) {
             throw new Error('Action [' + type + '] duplicated!');
         }
@@ -56,6 +61,7 @@ var actionCreatorFactory = function () {
         return action;
     };
     var creator = function (type) {
+        type = prefix + type;
         if (actions[type]) {
             throw new Error('Action [' + type + '] duplicated!');
         }

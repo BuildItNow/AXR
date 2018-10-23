@@ -67,6 +67,7 @@ interface ASRCaseReducerCreator<S> {
 export interface ASRReducersCreator {
     <S>(initState: S): ASRCaseReducerCreator<S>;
 }
+export declare const actionCreatorFactory: (prefix?: string) => ASRActionCreator;
 export declare const actionCreator: ASRActionCreator;
 export declare const reducerCreator: ASRReducerCreator;
 export declare const reducersCreator: ASRReducersCreator;

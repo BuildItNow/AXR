@@ -1,6 +1,6 @@
 {
   "name": "axr",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "Asynchronous stream development util based on redux.",
   "main": "index.js",
   "author": "Yang G",

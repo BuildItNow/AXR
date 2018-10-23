@@ -97,10 +97,16 @@ export interface ATRReducersCreator {
     <S>(initState: S): ATRCaseReducerCreator<S>;
 }
 
-const actionCreatorFactory = () => {
+const actionCreatorFactory = (prefix: string = ''): ATRActionCreator => {
+    if (prefix) {
+        prefix += '_';
+    }
+
     const actions: { [key: string]: boolean } = {};
 
     const asyncCreator = (type: string, thunk) => {
+        type = prefix + type;
+ 
         if (actions[type]) {
             throw new Error('Action [' + type + '] duplicated!');
         }
@@ -136,6 +142,8 @@ const actionCreatorFactory = () => {
     };
 
     const creator: any = (type: string) => {
+        type = prefix + type;
+ 
         if (actions[type]) {
             throw new Error('Action [' + type + '] duplicated!');
         }
@@ -163,7 +171,7 @@ const actionCreatorFactory = () => {
     return creator;
 };
 
-export const actionCreator: ATRActionCreator = actionCreatorFactory() as any;
+export const actionCreator: ATRActionCreator = actionCreatorFactory();
 
 const reducerCreatorImpl = (initState, action, reducer) => {
     return (state, actionData) => {
