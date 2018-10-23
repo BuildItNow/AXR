@@ -7,7 +7,8 @@
   "license": "MIT",
   "devDependencies": {
     "tslint": "^5.11.0",
-    "typescript": "^3.1.1"
+    "typescript": "^3.1.1",
+    "redux-saga": "^0.16.0"
   },
   "scripts": {
     "tslint": "tslint ./src/*.ts",
@@ -16,5 +17,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/BuildItNow/AXR"
+  },
+  "peerDependencies": {
+    "redux-saga": "^0.16.0"
   }
 }

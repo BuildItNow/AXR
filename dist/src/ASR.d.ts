@@ -62,6 +62,7 @@ interface ASRCaseReducerCreator<S> {
     case(action: ASRAction<ASRAsyncActionFailedPayload<any, S>>): ASRCaseReducerCreator<S>;
     case(action: ASRAction<S>): ASRCaseReducerCreator<S>;
     case<P>(action: ASRAction<P>, reducer: ASRReducer<S, P>): ASRCaseReducerCreator<S>;
+    property<PS>(name: string, reducer: (state: PS, actionData: ASRReduxActionData) => PS): ASRCaseReducerCreator<S>;
 }
 export interface ASRReducersCreator {
     <S>(initState: S): ASRCaseReducerCreator<S>;

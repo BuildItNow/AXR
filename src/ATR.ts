@@ -88,6 +88,9 @@ interface ATRCaseReducerCreator<S> {
     case<P>(action: ATRAction<P>, reducer: ATRReducer<S, P>): ATRCaseReducerCreator<S>;
     case<P, A>(action: ATRAsyncAction<A, P>, reducer: ATRReducer<S, ATRAsyncActionPayload<A, P>>)
         : ATRCaseReducerCreator<S>;
+
+    property<PS>(name: string, reducer: (state: PS, actionData: ATRReduxActionData) => PS)
+        : ATRCaseReducerCreator<S>;
 }
 
 export interface ATRReducersCreator {
@@ -185,30 +188,78 @@ const reducerCreatorImpl = (initState, action, reducer) => {
 
 const reducersCreatorImpl = (initState) => {
     const reducers = {};
+    const propertyReducers = {};
+    const properties: string[] = [];
+
+    const initPartialState = (state, actionData) => {
+        if (properties.length > 0) {
+            properties.forEach((key) => {
+                state[key] = propertyReducers[key](undefined, actionData);
+            });
+        }
+    };
+
+    const resolvePartialState = (state, actionData) => {
+        if (properties.length === 0) {
+            return state;
+        }
+
+        let newState;
+        properties.forEach((key) => {
+            const oState = state[key];
+            const nState = propertyReducers[key](oState, actionData);
+            if (oState !== nState) {
+                if (!newState) {
+                    newState = { ...state };
+                }
+
+                newState[key] = nState;
+            }
+        });
+
+        return newState === undefined ? state : newState;
+    };
 
     const rootReducer: any = (state, actionData) => {
         if (state === undefined) {
+            initPartialState(initState, actionData);
             return initState;
         }
 
         const reducer = reducers[actionData.type];
-        if (reducer === undefined) {
-            return state;
-        }
-
         if (reducer === 0) {
             if (actionData.__async) {
-                return actionData.payload.result;
+                state = actionData.payload.result;
+            } else {
+                state = actionData.payload;
             }
-            return actionData.payload;
+        } else if (reducer) {
+            state = reducer(state, actionData.payload, actionData);
+        } else {
+            state = resolvePartialState(state, actionData);
         }
 
-        return reducer(state, actionData.payload, actionData);
+        return state;
     };
 
     rootReducer.case = (action, reducer) => {
         reducer = reducer || 0;
         reducers[action.type] = reducer;
+
+        return rootReducer;
+    };
+
+    rootReducer.property = (name, reducer) => {
+        if (!reducer) {
+            return;
+        }
+
+        if (propertyReducers[name]) {
+            throw new Error('Property reducer [' + name + '] duplicated!');
+        }
+
+        propertyReducers[name] = reducer;
+        properties.push(name);
 
         return rootReducer;
     };

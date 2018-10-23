@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __generator = (this && this.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
@@ -111,28 +122,71 @@ var reducerCreatorImpl = function (initState, action, reducer) {
 };
 var reducersCreatorImpl = function (initState) {
     var reducers = {};
+    var propertyReducers = {};
+    var properties = [];
+    var initPartialState = function (state, actionData) {
+        if (properties.length > 0) {
+            properties.forEach(function (key) {
+                state[key] = propertyReducers[key](undefined, actionData);
+            });
+        }
+    };
+    var resolvePartialState = function (state, actionData) {
+        if (properties.length === 0) {
+            return state;
+        }
+        var newState;
+        properties.forEach(function (key) {
+            var oState = state[key];
+            var nState = propertyReducers[key](oState, actionData);
+            if (oState !== nState) {
+                if (!newState) {
+                    newState = __assign({}, state);
+                }
+                newState[key] = nState;
+            }
+        });
+        return newState === undefined ? state : newState;
+    };
     var rootReducer = function (state, actionData) {
         if (state === undefined) {
+            initPartialState(initState, actionData);
             return initState;
         }
         var reducer = reducers[actionData.type];
-        if (reducer === undefined) {
-            return state;
-        }
         if (reducer === 0) {
             if (actionData.__async === EAsync.DONE) {
-                return actionData.payload.result;
+                state = actionData.payload.result;
             }
             else if (actionData.__async === EAsync.FAILED && actionData.payload.result !== undefined) {
-                return actionData.payload.result;
+                state = actionData.payload.result;
             }
-            return actionData.payload;
+            else {
+                state = actionData.payload;
+            }
         }
-        return reducer(state, actionData.payload, actionData);
+        else if (reducer) {
+            state = reducer(state, actionData.payload, actionData);
+        }
+        else {
+            state = resolvePartialState(state, actionData);
+        }
+        return state;
     };
     rootReducer.case = function (action, reducer) {
         reducer = reducer || 0;
         reducers[action.type] = reducer;
+        return rootReducer;
+    };
+    rootReducer.property = function (name, reducer) {
+        if (!reducer) {
+            return;
+        }
+        if (propertyReducers[name]) {
+            throw new Error('Property reducer [' + name + '] duplicated!');
+        }
+        propertyReducers[name] = reducer;
+        properties.push(name);
         return rootReducer;
     };
     return rootReducer;

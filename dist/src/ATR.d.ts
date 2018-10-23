@@ -58,6 +58,7 @@ interface ATRCaseReducerCreator<S> {
     case<P>(action: ATREmptyAsyncAction<P>, reducer: ATRReducer<S, ATRAsyncActionPayload<void, P>>): ATRCaseReducerCreator<S>;
     case<P>(action: ATRAction<P>, reducer: ATRReducer<S, P>): ATRCaseReducerCreator<S>;
     case<P, A>(action: ATRAsyncAction<A, P>, reducer: ATRReducer<S, ATRAsyncActionPayload<A, P>>): ATRCaseReducerCreator<S>;
+    property<PS>(name: string, reducer: (state: PS, actionData: ATRReduxActionData) => PS): ATRCaseReducerCreator<S>;
 }
 export interface ATRReducersCreator {
     <S>(initState: S): ATRCaseReducerCreator<S>;
