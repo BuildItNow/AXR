@@ -147,8 +147,8 @@ export const actionCreatorFactory = (prefix: string = ''): ASRActionCreator => {
     };
 
     const asyncCreator = (type: string) => {
+        const oldType = type;
         type = prefix + type;
-
         if (actions[type]) {
             throw new Error('Action [' + type + '] duplicated!');
         }
@@ -157,9 +157,9 @@ export const actionCreatorFactory = (prefix: string = ''): ASRActionCreator => {
 
         const action = {
             type,
-            started: creator(type + '_S_', EAsync.STARTED),
-            done: creator(type + '_D_', EAsync.DONE),
-            failed: creator(type + '_F_', EAsync.FAILED),   
+            started: creator(oldType + '_S', EAsync.STARTED),
+            done: creator(oldType + '_D', EAsync.DONE),
+            failed: creator(oldType + '_F', EAsync.FAILED),   
         };
 
         return action;

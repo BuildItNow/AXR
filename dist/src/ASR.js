@@ -89,6 +89,7 @@ exports.actionCreatorFactory = function (prefix) {
         return action;
     };
     var asyncCreator = function (type) {
+        var oldType = type;
         type = prefix + type;
         if (actions[type]) {
             throw new Error('Action [' + type + '] duplicated!');
@@ -96,9 +97,9 @@ exports.actionCreatorFactory = function (prefix) {
         actions[type] = true;
         var action = {
             type: type,
-            started: creator(type + '_S_', EAsync.STARTED),
-            done: creator(type + '_D_', EAsync.DONE),
-            failed: creator(type + '_F_', EAsync.FAILED),
+            started: creator(oldType + '_S', EAsync.STARTED),
+            done: creator(oldType + '_D', EAsync.DONE),
+            failed: creator(oldType + '_F', EAsync.FAILED),
         };
         return action;
     };
