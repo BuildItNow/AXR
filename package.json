@@ -1,7 +1,7 @@
 {
   "name": "axr",
-  "version": "1.0.7",
-  "description": "Asynchronous stream development util based on redux.",
+  "version": "1.0.8",
+  "description": "Asynchronous stream development util. It's more convenient, modulized and typesafe to develop redux style application with AXR.",
   "main": "index.js",
   "author": "Yang G",
   "license": "MIT",
