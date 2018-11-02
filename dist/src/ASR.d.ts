@@ -72,7 +72,8 @@ export declare const actionCreator: ASRActionCreator;
 export declare const reducerCreator: ASRReducerCreator;
 export declare const reducersCreator: ASRReducersCreator;
 export interface ASRSaga {
-    (): Iterator<any>;
+    saga(): Iterator<any>;
+    handle(): Iterator<any>;
 }
 export interface ASRSagaHandle<P> {
     (payload: P, getter: typeof stateGetter, actionData: ASRActionData<P>): any;
@@ -82,5 +83,7 @@ export interface ASRSagaCreator {
     <P>(action: ASRAction<P>, handle: ASRSagaHandle<P>): ASRSaga;
     every(action: ASREmptyAction, handle: ASRSagaHandle<void>): ASRSaga;
     every<P>(action: ASRAction<P>, handle: ASRSagaHandle<P>): ASRSaga;
+    throttle(action: ASREmptyAction, time: number, handle: ASRSagaHandle<void>): ASRSaga;
+    throttle<P>(action: ASRAction<P>, time: number, handle: ASRSagaHandle<P>): ASRSaga;
 }
 export declare const sagaCreator: ASRSagaCreator;

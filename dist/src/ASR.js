@@ -201,7 +201,7 @@ var reducersCreatorImpl = function (initState) {
 exports.reducerCreator = reducerCreatorImpl;
 exports.reducersCreator = reducersCreatorImpl;
 var sagaCreatorImpl = function (action, handle) {
-    return function () {
+    var saga = function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, effects_1.takeLatest(action.type, function (actionData) {
@@ -230,9 +230,13 @@ var sagaCreatorImpl = function (action, handle) {
             }
         });
     };
+    return {
+        saga: saga,
+        handle: handle,
+    };
 };
 var sagaEvenryCreatorImpl = function (action, handle) {
-    return function () {
+    var saga = function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, effects_1.takeEvery(action.type, function (actionData) {
@@ -261,7 +265,47 @@ var sagaEvenryCreatorImpl = function (action, handle) {
             }
         });
     };
+    return {
+        saga: saga,
+        handle: handle,
+    };
+};
+var sagaThrottleCreatorImpl = function (action, time, handle) {
+    var saga = function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, effects_1.throttle(action.type, time, function (actionData) {
+                        var error_3;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    _a.trys.push([0, 2, , 3]);
+                                    return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
+                                case 1:
+                                    _a.sent();
+                                    return [3 /*break*/, 3];
+                                case 2:
+                                    error_3 = _a.sent();
+                                    setTimeout(function () {
+                                        throw error_3;
+                                    });
+                                    return [3 /*break*/, 3];
+                                case 3: return [2 /*return*/];
+                            }
+                        });
+                    })];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    };
+    return {
+        saga: saga,
+        handle: handle,
+    };
 };
 exports.sagaCreator = sagaCreatorImpl;
 exports.sagaCreator.every = sagaEvenryCreatorImpl;
+exports.sagaCreator.throttle = sagaThrottleCreatorImpl;
 //# sourceMappingURL=ASR.js.map

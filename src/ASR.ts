@@ -1,4 +1,4 @@
-import { takeLatest, takeEvery } from 'redux-saga/effects';
+import { takeLatest, takeEvery, throttle } from 'redux-saga/effects';
 import { axrGetOptions } from './AXR';
 export { axrSetOptions, axr, axrCombine } from './AXR'; 
 
@@ -282,7 +282,8 @@ export const reducerCreator: ASRReducerCreator = reducerCreatorImpl as any;
 export const reducersCreator: ASRReducersCreator = reducersCreatorImpl as any;
 
 export interface ASRSaga {
-    (): Iterator<any>;
+    saga(): Iterator<any>;
+    handle(): Iterator<any>;
 }
 
 export interface ASRSagaHandle<P> {
@@ -294,10 +295,12 @@ export interface ASRSagaCreator {
     <P>(action: ASRAction<P>, handle: ASRSagaHandle<P>): ASRSaga;
     every(action: ASREmptyAction, handle: ASRSagaHandle<void>): ASRSaga;
     every<P>(action: ASRAction<P>, handle: ASRSagaHandle<P>): ASRSaga;
+    throttle(action: ASREmptyAction, time: number, handle: ASRSagaHandle<void>): ASRSaga;
+    throttle<P>(action: ASRAction<P>, time: number, handle: ASRSagaHandle<P>): ASRSaga;
 }
 
 const sagaCreatorImpl = (action, handle) => {
-    return function*() {
+    const saga = function*() {
         yield takeLatest(action.type, function*(actionData: ASRActionData<any>) {
             try {
                 yield handle(actionData.payload, stateGetter, actionData);
@@ -308,10 +311,14 @@ const sagaCreatorImpl = (action, handle) => {
             }
         });
     };
+    return {
+        saga,
+        handle,
+    };
 };
 
 const sagaEvenryCreatorImpl = (action, handle) => {
-    return function*() {
+    const saga = function*() {
         yield takeEvery(action.type, function*(actionData: ASRActionData<any>) {
             try {
                 yield handle(actionData.payload, stateGetter, actionData);
@@ -322,7 +329,32 @@ const sagaEvenryCreatorImpl = (action, handle) => {
             }
         });
     };
+
+    return {
+        saga,
+        handle,
+    };
+};
+
+const sagaThrottleCreatorImpl = (action, time, handle) => {
+    const saga = function*() {
+        yield throttle(action.type, time, function*(actionData: ASRActionData<any>) {
+            try {
+                yield handle(actionData.payload, stateGetter, actionData);
+            } catch (error) {
+                setTimeout(() => {
+                    throw error;
+                });
+            }
+        });
+    };
+
+    return {
+        saga,
+        handle,
+    };
 };
 
 export const sagaCreator: ASRSagaCreator = sagaCreatorImpl as any;
 sagaCreator.every = sagaEvenryCreatorImpl as any;
+sagaCreator.throttle = sagaThrottleCreatorImpl as any;
