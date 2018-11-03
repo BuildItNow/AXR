@@ -1,5 +1,3 @@
-export { axrSetOptions, axr, axrCombine } from './AXR';
-declare const stateGetter: () => any;
 export interface ATRReduxActionData {
     type: string;
 }
@@ -29,7 +27,7 @@ export interface ATREmptyAsyncAction<P> extends ATRAsyncAction<void, P> {
     (): Promise<P>;
 }
 export interface ATRAsyncThunk<A, P> {
-    (params: A, getter: typeof stateGetter): Promise<P>;
+    (params: A, getter: () => any): Promise<P>;
 }
 export interface ATRActionCreator {
     (type: string): ATREmptyAction;
@@ -63,6 +61,15 @@ interface ATRCaseReducerCreator<S> {
 export interface ATRReducersCreator {
     <S>(initState: S): ATRCaseReducerCreator<S>;
 }
-export declare const actionCreator: ATRActionCreator;
-export declare const reducerCreator: ATRReducerCreator;
-export declare const reducersCreator: ATRReducersCreator;
+export declare const createATRContext: () => {
+    axr: import("./AXR").axr;
+    axrCombine: import("./AXR").axrCombine;
+    axrSetOptions: (options: import("./AXR").AXROptions) => void;
+    axrGetOptions: () => import("./AXR").AXROptions;
+    actionCreatorFactory: (prefix?: string) => ATRActionCreator;
+    actionCreator: ATRActionCreator;
+    reducerCreator: ATRReducerCreator;
+    reducersCreator: ATRReducersCreator;
+};
+export declare const axr: import("./AXR").axr, axrCombine: import("./AXR").axrCombine, axrSetOptions: (options: import("./AXR").AXROptions) => void, axrGetOptions: () => import("./AXR").AXROptions, actionCreatorFactory: (prefix?: string) => ATRActionCreator, actionCreator: ATRActionCreator, reducerCreator: ATRReducerCreator, reducersCreator: ATRReducersCreator;
+export {};

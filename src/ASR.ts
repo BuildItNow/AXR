@@ -1,15 +1,6 @@
 import { takeLatest, takeEvery, throttle } from 'redux-saga/effects';
-import { axrGetOptions } from './AXR';
-export { axrSetOptions, axr, axrCombine } from './AXR'; 
-
-const stateGetter = () => {
-    return axrGetOptions().getState();
-};
-
-const actionDispatch = (actionData) => {
-    return axrGetOptions().dispatch(actionData);
-};
-
+import { createContext } from './AXR';
+ 
 export interface ASRReduxActionData {
     type: string;
 }
@@ -82,7 +73,7 @@ export interface ASRReducerCreator {
         : (state: S, actionData: ASRReduxActionData) => S;
 }
 
-interface ASRCaseReducerCreator<S> {
+export interface ASRCaseReducerCreator<S> {
     (state: S, actionData: ASRReduxActionData): S;
     
     case(action: ASREmptyAction, reducer?: ASRReducer<S, void>): ASRCaseReducerCreator<S>;
@@ -100,186 +91,11 @@ export interface ASRReducersCreator {
     <S>(initState: S): ASRCaseReducerCreator<S>;
 }
 
-enum EAsync {
+export enum EAsync {
     STARTED = 1,
     DONE,
     FAILED,
 }
-
-export const actionCreatorFactory = (prefix: string = ''): ASRActionCreator => {
-    if (prefix) {
-        prefix += '_';
-    }
-
-    const actions: { [key: string]: boolean } = {};
-
-    const creator: any = (type: string, __async) => {
-        type = prefix + type;
- 
-        if (actions[type]) {
-            throw new Error('Action [' + type + '] duplicated!');
-        }
-
-        actions[type] = true;
-
-        const action: any = (payload) => {
-            return {
-                type,
-                payload,
-                __async,
-            };
-        };
-
-        action.dispatch = (payload) => {
-            return actionDispatch({
-                type,
-                payload,
-                __async,
-            });
-        };
-
-        action.type = type;
-        action.match = function(t: string) {
-            return this.type === t;
-        };
-
-        return action;
-    };
-
-    const asyncCreator = (type: string) => {
-        const oldType = type;
-        type = prefix + type;
-        if (actions[type]) {
-            throw new Error('Action [' + type + '] duplicated!');
-        }
-
-        actions[type] = true;
-
-        const action = {
-            type,
-            started: creator(oldType + '_S', EAsync.STARTED),
-            done: creator(oldType + '_D', EAsync.DONE),
-            failed: creator(oldType + '_F', EAsync.FAILED),   
-        };
-
-        return action;
-    };
-
-    creator.async = asyncCreator;
-
-    return creator;
-};
-
-export const actionCreator: ASRActionCreator = actionCreatorFactory();
-
-const reducerCreatorImpl = (initState, action, reducer) => {
-    return (state, actionData) => {
-        if (state === undefined) {
-            return initState;
-        }
-
-        if (!action.match(actionData.type)) {
-            return state;
-        }
-
-        if (!reducer) {
-            if (actionData.__async === EAsync.DONE) {
-                return actionData.payload.result;
-            } else if (actionData.__async === EAsync.FAILED && actionData.payload.result !== undefined) {
-                return actionData.payload.result;
-            }
-            return actionData.payload;
-        }
-
-        return reducer(state, actionData.payload, actionData);
-    };
-};
-
-const reducersCreatorImpl = (initState) => {
-    const reducers = {};
-    const propertyReducers = {};
-    const properties: string[] = [];
-
-    const initPartialState = (state, actionData) => {
-        if (properties.length > 0) {
-            properties.forEach((key) => {
-                state[key] = propertyReducers[key](undefined, actionData);
-            });
-        }
-    };
-
-    const resolvePartialState = (state, actionData) => {
-        if (properties.length === 0) {
-            return state;
-        }
-
-        let newState;
-        properties.forEach((key) => {
-            const oState = state[key];
-            const nState = propertyReducers[key](oState, actionData);
-            if (oState !== nState) {
-                if (!newState) {
-                    newState = { ...state };
-                }
-
-                newState[key] = nState;
-            }
-        });
-
-        return newState === undefined ? state : newState;
-    };
-
-    const rootReducer: any = (state, actionData) => {
-        if (state === undefined) {
-            initPartialState(initState, actionData);
-            return initState;
-        }
-
-        const reducer = reducers[actionData.type];
-        if (reducer === 0) {
-            if (actionData.__async === EAsync.DONE) {
-                state = actionData.payload.result;
-            } else if (actionData.__async === EAsync.FAILED && actionData.payload.result !== undefined) {
-                state = actionData.payload.result;
-            } else {
-                state = actionData.payload;
-            }
-        } else if (reducer) {
-            state = reducer(state, actionData.payload, actionData);
-        } else {
-            state = resolvePartialState(state, actionData);
-        }   
-
-        return state;
-    };
-
-    rootReducer.case = (action, reducer) => {
-        reducer = reducer || 0;
-        reducers[action.type] = reducer;
-
-        return rootReducer;
-    };
-
-    rootReducer.property = (name, reducer) => {
-        if (!reducer) {
-            return;
-        }
-
-        if (propertyReducers[name]) {
-            throw new Error('Property reducer [' + name + '] duplicated!');
-        }
-
-        propertyReducers[name] = reducer;
-        properties.push(name);
-
-        return rootReducer;
-    };
-
-    return rootReducer;
-};
-
-export const reducerCreator: ASRReducerCreator = reducerCreatorImpl as any;
-export const reducersCreator: ASRReducersCreator = reducersCreatorImpl as any;
 
 export interface ASRSaga {
     saga(): Iterator<any>;
@@ -287,7 +103,7 @@ export interface ASRSaga {
 }
 
 export interface ASRSagaHandle<P> {
-    (payload: P, getter: typeof stateGetter, actionData: ASRActionData<P>);
+    (payload: P, getter: () => any, actionData: ASRActionData<P>);
 }
 
 export interface ASRSagaCreator {
@@ -299,62 +115,276 @@ export interface ASRSagaCreator {
     throttle<P>(action: ASRAction<P>, time: number, handle: ASRSagaHandle<P>): ASRSaga;
 }
 
-const sagaCreatorImpl = (action, handle) => {
-    const saga = function*() {
-        yield takeLatest(action.type, function*(actionData: ASRActionData<any>) {
-            try {
-                yield handle(actionData.payload, stateGetter, actionData);
-            } catch (error) {
-                setTimeout(() => {
-                    throw error;
+export const createASRContext = () => {
+    // tslint:disable:no-shadowed-variable
+    const { axrGetOptions, axrSetOptions, axr, axrCombine } = createContext();
+
+    const stateGetter = () => {
+        return axrGetOptions().getState();
+    };
+    
+    const actionDispatch = (actionData) => {
+        return axrGetOptions().dispatch(actionData);
+    };
+    
+    const actionCreatorFactory = (prefix: string = ''): ASRActionCreator => {
+        if (prefix) {
+            prefix += '_';
+        }
+    
+        const actions: { [key: string]: boolean } = {};
+    
+        const creator: any = (type: string, __async) => {
+            type = prefix + type;
+     
+            if (actions[type]) {
+                throw new Error('Action [' + type + '] duplicated!');
+            }
+    
+            actions[type] = true;
+    
+            const action: any = (payload) => {
+                return {
+                    type,
+                    payload,
+                    __async,
+                };
+            };
+    
+            action.dispatch = (payload) => {
+                return actionDispatch({
+                    type,
+                    payload,
+                    __async,
+                });
+            };
+    
+            action.type = type;
+            action.match = function(t: string) {
+                return this.type === t;
+            };
+    
+            return action;
+        };
+    
+        const asyncCreator = (type: string) => {
+            const oldType = type;
+            type = prefix + type;
+            if (actions[type]) {
+                throw new Error('Action [' + type + '] duplicated!');
+            }
+    
+            actions[type] = true;
+    
+            const action = {
+                type,
+                started: creator(oldType + '_S', EAsync.STARTED),
+                done: creator(oldType + '_D', EAsync.DONE),
+                failed: creator(oldType + '_F', EAsync.FAILED),   
+            };
+    
+            return action;
+        };
+    
+        creator.async = asyncCreator;
+    
+        return creator;
+    };
+    
+    const actionCreator: ASRActionCreator = actionCreatorFactory();
+    
+    const reducerCreatorImpl = (initState, action, reducer) => {
+        return (state, actionData) => {
+            if (state === undefined) {
+                return initState;
+            }
+    
+            if (!action.match(actionData.type)) {
+                return state;
+            }
+    
+            if (!reducer) {
+                if (actionData.__async === EAsync.DONE) {
+                    return actionData.payload.result;
+                } else if (actionData.__async === EAsync.FAILED && actionData.payload.result !== undefined) {
+                    return actionData.payload.result;
+                }
+                return actionData.payload;
+            }
+    
+            return reducer(state, actionData.payload, actionData);
+        };
+    };
+    
+    const reducersCreatorImpl = (initState) => {
+        const reducers = {};
+        const propertyReducers = {};
+        const properties: string[] = [];
+    
+        const initPartialState = (state, actionData) => {
+            if (properties.length > 0) {
+                properties.forEach((key) => {
+                    state[key] = propertyReducers[key](undefined, actionData);
                 });
             }
-        });
-    };
-    return {
-        saga,
-        handle,
-    };
-};
-
-const sagaEvenryCreatorImpl = (action, handle) => {
-    const saga = function*() {
-        yield takeEvery(action.type, function*(actionData: ASRActionData<any>) {
-            try {
-                yield handle(actionData.payload, stateGetter, actionData);
-            } catch (error) {
-                setTimeout(() => {
-                    throw error;
-                });
+        };
+    
+        const resolvePartialState = (state, actionData) => {
+            if (properties.length === 0) {
+                return state;
             }
-        });
-    };
-
-    return {
-        saga,
-        handle,
-    };
-};
-
-const sagaThrottleCreatorImpl = (action, time, handle) => {
-    const saga = function*() {
-        yield throttle(action.type, time, function*(actionData: ASRActionData<any>) {
-            try {
-                yield handle(actionData.payload, stateGetter, actionData);
-            } catch (error) {
-                setTimeout(() => {
-                    throw error;
-                });
+    
+            let newState;
+            properties.forEach((key) => {
+                const oState = state[key];
+                const nState = propertyReducers[key](oState, actionData);
+                if (oState !== nState) {
+                    if (!newState) {
+                        newState = { ...state };
+                    }
+    
+                    newState[key] = nState;
+                }
+            });
+    
+            return newState === undefined ? state : newState;
+        };
+    
+        const rootReducer: any = (state, actionData) => {
+            if (state === undefined) {
+                initPartialState(initState, actionData);
+                return initState;
             }
-        });
+    
+            const reducer = reducers[actionData.type];
+            if (reducer === 0) {
+                if (actionData.__async === EAsync.DONE) {
+                    state = actionData.payload.result;
+                } else if (actionData.__async === EAsync.FAILED && actionData.payload.result !== undefined) {
+                    state = actionData.payload.result;
+                } else {
+                    state = actionData.payload;
+                }
+            } else if (reducer) {
+                state = reducer(state, actionData.payload, actionData);
+            } else {
+                state = resolvePartialState(state, actionData);
+            }   
+    
+            return state;
+        };
+    
+        rootReducer.case = (action, reducer) => {
+            reducer = reducer || 0;
+            reducers[action.type] = reducer;
+    
+            return rootReducer;
+        };
+    
+        rootReducer.property = (name, reducer) => {
+            if (!reducer) {
+                return;
+            }
+    
+            if (propertyReducers[name]) {
+                throw new Error('Property reducer [' + name + '] duplicated!');
+            }
+    
+            propertyReducers[name] = reducer;
+            properties.push(name);
+    
+            return rootReducer;
+        };
+    
+        return rootReducer;
     };
+    
+    const reducerCreator: ASRReducerCreator = reducerCreatorImpl as any;
+    const reducersCreator: ASRReducersCreator = reducersCreatorImpl as any;
+    
+    const sagaCreatorImpl = (action, handle) => {
+        const saga = function*() {
+            yield takeLatest(action.type, function*(actionData: ASRActionData<any>) {
+                try {
+                    yield handle(actionData.payload, stateGetter, actionData);
+                } catch (error) {
+                    setTimeout(() => {
+                        throw error;
+                    });
+                }
+            });
+        };
+        return {
+            saga,
+            handle,
+        };
+    };
+    
+    const sagaEvenryCreatorImpl = (action, handle) => {
+        const saga = function*() {
+            yield takeEvery(action.type, function*(actionData: ASRActionData<any>) {
+                try {
+                    yield handle(actionData.payload, stateGetter, actionData);
+                } catch (error) {
+                    setTimeout(() => {
+                        throw error;
+                    });
+                }
+            });
+        };
+    
+        return {
+            saga,
+            handle,
+        };
+    };
+    
+    const sagaThrottleCreatorImpl = (action, time, handle) => {
+        const saga = function*() {
+            yield throttle(action.type, time, function*(actionData: ASRActionData<any>) {
+                try {
+                    yield handle(actionData.payload, stateGetter, actionData);
+                } catch (error) {
+                    setTimeout(() => {
+                        throw error;
+                    });
+                }
+            });
+        };
+    
+        return {
+            saga,
+            handle,
+        };
+    };
+    
+    const sagaCreator: ASRSagaCreator = sagaCreatorImpl as any;
+    sagaCreator.every = sagaEvenryCreatorImpl as any;
+    sagaCreator.throttle = sagaThrottleCreatorImpl as any;
 
     return {
-        saga,
-        handle,
+        axr,
+        axrCombine,
+        axrSetOptions,
+        axrGetOptions,
+        actionCreatorFactory,
+        actionCreator,
+        sagaCreator,
+        reducerCreator,
+        reducersCreator,
     };
+    // tslint:enable
 };
 
-export const sagaCreator: ASRSagaCreator = sagaCreatorImpl as any;
-sagaCreator.every = sagaEvenryCreatorImpl as any;
-sagaCreator.throttle = sagaThrottleCreatorImpl as any;
+// Export the default context
+export const {
+    axr,
+    axrCombine,
+    axrSetOptions,
+    axrGetOptions,
+    actionCreatorFactory,
+    actionCreator,
+    sagaCreator,
+    reducerCreator,
+    reducersCreator,
+} = createASRContext();

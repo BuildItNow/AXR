@@ -1,13 +1,4 @@
-import { axrGetOptions } from './AXR';
-export { axrSetOptions, axr, axrCombine } from './AXR'; 
-
-const stateGetter = () => {
-    return axrGetOptions().getState();
-};
-
-const actionDispatch = (actionData) => {
-    return axrGetOptions().dispatch(actionData);
-};
+import { createContext } from './AXR';
 
 export interface ATRReduxActionData {
     type: string;
@@ -46,7 +37,7 @@ export interface ATREmptyAsyncAction<P> extends ATRAsyncAction<void, P> {
 }
 
 export interface ATRAsyncThunk<A, P> {
-    (params: A, getter: typeof stateGetter): Promise<P>;
+    (params: A, getter: () => any): Promise<P>;
 }
 
 export interface ATRActionCreator {
@@ -97,26 +88,38 @@ export interface ATRReducersCreator {
     <S>(initState: S): ATRCaseReducerCreator<S>;
 }
 
-const actionCreatorFactory = (prefix: string = ''): ATRActionCreator => {
-    if (prefix) {
-        prefix += '_';
-    }
+export const createATRContext = () => {
+    // tslint:disable:no-shadowed-variable
+    const { axrGetOptions, axrSetOptions, axr, axrCombine } = createContext();
 
-    const actions: { [key: string]: boolean } = {};
+    const stateGetter = () => {
+        return axrGetOptions().getState();
+    };
 
-    const asyncCreator = (type: string, thunk) => {
-        type = prefix + type;
- 
-        if (actions[type]) {
-            throw new Error('Action [' + type + '] duplicated!');
+    const actionDispatch = (actionData) => {
+        return axrGetOptions().dispatch(actionData);
+    };
+
+    const actionCreatorFactory = (prefix: string = ''): ATRActionCreator => {
+        if (prefix) {
+            prefix += '_';
         }
 
-        actions[type] = true;
+        const actions: { [key: string]: boolean } = {};
 
-        const action: any = (params) => {
-            let p = thunk.call(undefined, params, stateGetter);
-            if (p) {
-                p = p.then((payload: any) => {
+        const asyncCreator = (type: string, thunk) => {
+            type = prefix + type;
+
+            if (actions[type]) {
+                throw new Error('Action [' + type + '] duplicated!');
+            }
+
+            actions[type] = true;
+
+            const action: any = (params) => {
+                let p = thunk.call(undefined, params, stateGetter);
+                if (p) {
+                    p = p.then((payload: any) => {
                         actionDispatch({
                             type,
                             payload: {
@@ -125,155 +128,179 @@ const actionCreatorFactory = (prefix: string = ''): ATRActionCreator => {
                             },
                             __async: true,
                         });
-        
+
                         return payload;
                     });
-            } else {
-                p = Promise.reject();
-            }
-            return p;
-        };
-        action.type = type;
-        action.match = function(t: string) {
-            return this.type === t;
-        };
-
-        return action;
-    };
-
-    const creator: any = (type: string) => {
-        type = prefix + type;
- 
-        if (actions[type]) {
-            throw new Error('Action [' + type + '] duplicated!');
-        }
-
-        actions[type] = true;
-
-        const action: any = (payload) => {
-            actionDispatch({
-                type,
-                payload,
-            });
-
-            return Promise.resolve(payload);
-        };
-        action.type = type;
-        action.match = function(t: string) {
-            return this.type === t;
-        };
-
-        return action;
-    };
-
-    creator.async = asyncCreator;
-
-    return creator;
-};
-
-export const actionCreator: ATRActionCreator = actionCreatorFactory();
-
-const reducerCreatorImpl = (initState, action, reducer) => {
-    return (state, actionData) => {
-        if (state === undefined) {
-            return initState;
-        }
-
-        if (!action.match(actionData.type)) {
-            return state;
-        }
-
-        if (!reducer) {
-            if (actionData.__async) {
-                return actionData.payload.result;
-            }
-            return actionData.payload;
-        }
-
-        return reducer(state, actionData.payload, actionData);
-    };
-};
-
-const reducersCreatorImpl = (initState) => {
-    const reducers = {};
-    const propertyReducers = {};
-    const properties: string[] = [];
-
-    const initPartialState = (state, actionData) => {
-        if (properties.length > 0) {
-            properties.forEach((key) => {
-                state[key] = propertyReducers[key](undefined, actionData);
-            });
-        }
-    };
-
-    const resolvePartialState = (state, actionData) => {
-        if (properties.length === 0) {
-            return state;
-        }
-
-        let newState;
-        properties.forEach((key) => {
-            const oState = state[key];
-            const nState = propertyReducers[key](oState, actionData);
-            if (oState !== nState) {
-                if (!newState) {
-                    newState = { ...state };
+                } else {
+                    p = Promise.reject();
                 }
+                return p;
+            };
+            action.type = type;
+            action.match = function(t: string) {
+                return this.type === t;
+            };
 
-                newState[key] = nState;
+            return action;
+        };
+
+        const creator: any = (type: string) => {
+            type = prefix + type;
+
+            if (actions[type]) {
+                throw new Error('Action [' + type + '] duplicated!');
             }
-        });
 
-        return newState === undefined ? state : newState;
+            actions[type] = true;
+
+            const action: any = (payload) => {
+                actionDispatch({
+                    type,
+                    payload,
+                });
+
+                return Promise.resolve(payload);
+            };
+            action.type = type;
+            action.match = function(t: string) {
+                return this.type === t;
+            };
+
+            return action;
+        };
+
+        creator.async = asyncCreator;
+
+        return creator;
     };
 
-    const rootReducer: any = (state, actionData) => {
-        if (state === undefined) {
-            initPartialState(initState, actionData);
-            return initState;
-        }
+    const actionCreator: ATRActionCreator = actionCreatorFactory();
 
-        const reducer = reducers[actionData.type];
-        if (reducer === 0) {
-            if (actionData.__async) {
-                state = actionData.payload.result;
+    const reducerCreatorImpl = (initState, action, reducer) => {
+        return (state, actionData) => {
+            if (state === undefined) {
+                return initState;
+            }
+
+            if (!action.match(actionData.type)) {
+                return state;
+            }
+
+            if (!reducer) {
+                if (actionData.__async) {
+                    return actionData.payload.result;
+                }
+                return actionData.payload;
+            }
+
+            return reducer(state, actionData.payload, actionData);
+        };
+    };
+
+    const reducersCreatorImpl = (initState) => {
+        const reducers = {};
+        const propertyReducers = {};
+        const properties: string[] = [];
+
+        const initPartialState = (state, actionData) => {
+            if (properties.length > 0) {
+                properties.forEach((key) => {
+                    state[key] = propertyReducers[key](undefined, actionData);
+                });
+            }
+        };
+
+        const resolvePartialState = (state, actionData) => {
+            if (properties.length === 0) {
+                return state;
+            }
+
+            let newState;
+            properties.forEach((key) => {
+                const oState = state[key];
+                const nState = propertyReducers[key](oState, actionData);
+                if (oState !== nState) {
+                    if (!newState) {
+                        newState = { ...state };
+                    }
+
+                    newState[key] = nState;
+                }
+            });
+
+            return newState === undefined ? state : newState;
+        };
+
+        const rootReducer: any = (state, actionData) => {
+            if (state === undefined) {
+                initPartialState(initState, actionData);
+                return initState;
+            }
+
+            const reducer = reducers[actionData.type];
+            if (reducer === 0) {
+                if (actionData.__async) {
+                    state = actionData.payload.result;
+                } else {
+                    state = actionData.payload;
+                }
+            } else if (reducer) {
+                state = reducer(state, actionData.payload, actionData);
             } else {
-                state = actionData.payload;
+                state = resolvePartialState(state, actionData);
             }
-        } else if (reducer) {
-            state = reducer(state, actionData.payload, actionData);
-        } else {
-            state = resolvePartialState(state, actionData);
-        }
 
-        return state;
-    };
+            return state;
+        };
 
-    rootReducer.case = (action, reducer) => {
-        reducer = reducer || 0;
-        reducers[action.type] = reducer;
+        rootReducer.case = (action, reducer) => {
+            reducer = reducer || 0;
+            reducers[action.type] = reducer;
 
-        return rootReducer;
-    };
+            return rootReducer;
+        };
 
-    rootReducer.property = (name, reducer) => {
-        if (!reducer) {
-            return;
-        }
+        rootReducer.property = (name, reducer) => {
+            if (!reducer) {
+                return;
+            }
 
-        if (propertyReducers[name]) {
-            throw new Error('Property reducer [' + name + '] duplicated!');
-        }
+            if (propertyReducers[name]) {
+                throw new Error('Property reducer [' + name + '] duplicated!');
+            }
 
-        propertyReducers[name] = reducer;
-        properties.push(name);
+            propertyReducers[name] = reducer;
+            properties.push(name);
+
+            return rootReducer;
+        };
 
         return rootReducer;
     };
 
-    return rootReducer;
+    const reducerCreator: ATRReducerCreator = reducerCreatorImpl as any;
+    const reducersCreator: ATRReducersCreator = reducersCreatorImpl as any;
+
+    return {
+        axr,
+        axrCombine,
+        axrSetOptions,
+        axrGetOptions,
+        actionCreatorFactory,
+        actionCreator,
+        reducerCreator,
+        reducersCreator,
+    };
 };
 
-export const reducerCreator: ATRReducerCreator = reducerCreatorImpl as any;
-export const reducersCreator: ATRReducersCreator = reducersCreatorImpl as any;
+// Export the default context
+export const {
+    axr,
+    axrCombine,
+    axrSetOptions,
+    axrGetOptions,
+    actionCreatorFactory,
+    actionCreator,
+    reducerCreator,
+    reducersCreator,
+} = createATRContext();

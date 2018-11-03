@@ -38,274 +38,289 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var _a;
 var effects_1 = require("redux-saga/effects");
 var AXR_1 = require("./AXR");
-var AXR_2 = require("./AXR");
-exports.axrSetOptions = AXR_2.axrSetOptions;
-exports.axr = AXR_2.axr;
-exports.axrCombine = AXR_2.axrCombine;
-var stateGetter = function () {
-    return AXR_1.axrGetOptions().getState();
-};
-var actionDispatch = function (actionData) {
-    return AXR_1.axrGetOptions().dispatch(actionData);
-};
 var EAsync;
 (function (EAsync) {
     EAsync[EAsync["STARTED"] = 1] = "STARTED";
     EAsync[EAsync["DONE"] = 2] = "DONE";
     EAsync[EAsync["FAILED"] = 3] = "FAILED";
-})(EAsync || (EAsync = {}));
-exports.actionCreatorFactory = function (prefix) {
-    if (prefix === void 0) { prefix = ''; }
-    if (prefix) {
-        prefix += '_';
-    }
-    var actions = {};
-    var creator = function (type, __async) {
-        type = prefix + type;
-        if (actions[type]) {
-            throw new Error('Action [' + type + '] duplicated!');
+})(EAsync = exports.EAsync || (exports.EAsync = {}));
+exports.createASRContext = function () {
+    // tslint:disable:no-shadowed-variable
+    var _a = AXR_1.createContext(), axrGetOptions = _a.axrGetOptions, axrSetOptions = _a.axrSetOptions, axr = _a.axr, axrCombine = _a.axrCombine;
+    var stateGetter = function () {
+        return axrGetOptions().getState();
+    };
+    var actionDispatch = function (actionData) {
+        return axrGetOptions().dispatch(actionData);
+    };
+    var actionCreatorFactory = function (prefix) {
+        if (prefix === void 0) { prefix = ''; }
+        if (prefix) {
+            prefix += '_';
         }
-        actions[type] = true;
-        var action = function (payload) {
-            return {
-                type: type,
-                payload: payload,
-                __async: __async,
+        var actions = {};
+        var creator = function (type, __async) {
+            type = prefix + type;
+            if (actions[type]) {
+                throw new Error('Action [' + type + '] duplicated!');
+            }
+            actions[type] = true;
+            var action = function (payload) {
+                return {
+                    type: type,
+                    payload: payload,
+                    __async: __async,
+                };
             };
+            action.dispatch = function (payload) {
+                return actionDispatch({
+                    type: type,
+                    payload: payload,
+                    __async: __async,
+                });
+            };
+            action.type = type;
+            action.match = function (t) {
+                return this.type === t;
+            };
+            return action;
         };
-        action.dispatch = function (payload) {
-            return actionDispatch({
+        var asyncCreator = function (type) {
+            var oldType = type;
+            type = prefix + type;
+            if (actions[type]) {
+                throw new Error('Action [' + type + '] duplicated!');
+            }
+            actions[type] = true;
+            var action = {
                 type: type,
-                payload: payload,
-                __async: __async,
-            });
+                started: creator(oldType + '_S', EAsync.STARTED),
+                done: creator(oldType + '_D', EAsync.DONE),
+                failed: creator(oldType + '_F', EAsync.FAILED),
+            };
+            return action;
         };
-        action.type = type;
-        action.match = function (t) {
-            return this.type === t;
-        };
-        return action;
+        creator.async = asyncCreator;
+        return creator;
     };
-    var asyncCreator = function (type) {
-        var oldType = type;
-        type = prefix + type;
-        if (actions[type]) {
-            throw new Error('Action [' + type + '] duplicated!');
-        }
-        actions[type] = true;
-        var action = {
-            type: type,
-            started: creator(oldType + '_S', EAsync.STARTED),
-            done: creator(oldType + '_D', EAsync.DONE),
-            failed: creator(oldType + '_F', EAsync.FAILED),
-        };
-        return action;
-    };
-    creator.async = asyncCreator;
-    return creator;
-};
-exports.actionCreator = exports.actionCreatorFactory();
-var reducerCreatorImpl = function (initState, action, reducer) {
-    return function (state, actionData) {
-        if (state === undefined) {
-            return initState;
-        }
-        if (!action.match(actionData.type)) {
-            return state;
-        }
-        if (!reducer) {
-            if (actionData.__async === EAsync.DONE) {
-                return actionData.payload.result;
+    var actionCreator = actionCreatorFactory();
+    var reducerCreatorImpl = function (initState, action, reducer) {
+        return function (state, actionData) {
+            if (state === undefined) {
+                return initState;
             }
-            else if (actionData.__async === EAsync.FAILED && actionData.payload.result !== undefined) {
-                return actionData.payload.result;
+            if (!action.match(actionData.type)) {
+                return state;
             }
-            return actionData.payload;
-        }
-        return reducer(state, actionData.payload, actionData);
-    };
-};
-var reducersCreatorImpl = function (initState) {
-    var reducers = {};
-    var propertyReducers = {};
-    var properties = [];
-    var initPartialState = function (state, actionData) {
-        if (properties.length > 0) {
-            properties.forEach(function (key) {
-                state[key] = propertyReducers[key](undefined, actionData);
-            });
-        }
-    };
-    var resolvePartialState = function (state, actionData) {
-        if (properties.length === 0) {
-            return state;
-        }
-        var newState;
-        properties.forEach(function (key) {
-            var oState = state[key];
-            var nState = propertyReducers[key](oState, actionData);
-            if (oState !== nState) {
-                if (!newState) {
-                    newState = __assign({}, state);
+            if (!reducer) {
+                if (actionData.__async === EAsync.DONE) {
+                    return actionData.payload.result;
                 }
-                newState[key] = nState;
+                else if (actionData.__async === EAsync.FAILED && actionData.payload.result !== undefined) {
+                    return actionData.payload.result;
+                }
+                return actionData.payload;
             }
-        });
-        return newState === undefined ? state : newState;
+            return reducer(state, actionData.payload, actionData);
+        };
     };
-    var rootReducer = function (state, actionData) {
-        if (state === undefined) {
-            initPartialState(initState, actionData);
-            return initState;
-        }
-        var reducer = reducers[actionData.type];
-        if (reducer === 0) {
-            if (actionData.__async === EAsync.DONE) {
-                state = actionData.payload.result;
+    var reducersCreatorImpl = function (initState) {
+        var reducers = {};
+        var propertyReducers = {};
+        var properties = [];
+        var initPartialState = function (state, actionData) {
+            if (properties.length > 0) {
+                properties.forEach(function (key) {
+                    state[key] = propertyReducers[key](undefined, actionData);
+                });
             }
-            else if (actionData.__async === EAsync.FAILED && actionData.payload.result !== undefined) {
-                state = actionData.payload.result;
+        };
+        var resolvePartialState = function (state, actionData) {
+            if (properties.length === 0) {
+                return state;
+            }
+            var newState;
+            properties.forEach(function (key) {
+                var oState = state[key];
+                var nState = propertyReducers[key](oState, actionData);
+                if (oState !== nState) {
+                    if (!newState) {
+                        newState = __assign({}, state);
+                    }
+                    newState[key] = nState;
+                }
+            });
+            return newState === undefined ? state : newState;
+        };
+        var rootReducer = function (state, actionData) {
+            if (state === undefined) {
+                initPartialState(initState, actionData);
+                return initState;
+            }
+            var reducer = reducers[actionData.type];
+            if (reducer === 0) {
+                if (actionData.__async === EAsync.DONE) {
+                    state = actionData.payload.result;
+                }
+                else if (actionData.__async === EAsync.FAILED && actionData.payload.result !== undefined) {
+                    state = actionData.payload.result;
+                }
+                else {
+                    state = actionData.payload;
+                }
+            }
+            else if (reducer) {
+                state = reducer(state, actionData.payload, actionData);
             }
             else {
-                state = actionData.payload;
+                state = resolvePartialState(state, actionData);
             }
-        }
-        else if (reducer) {
-            state = reducer(state, actionData.payload, actionData);
-        }
-        else {
-            state = resolvePartialState(state, actionData);
-        }
-        return state;
-    };
-    rootReducer.case = function (action, reducer) {
-        reducer = reducer || 0;
-        reducers[action.type] = reducer;
+            return state;
+        };
+        rootReducer.case = function (action, reducer) {
+            reducer = reducer || 0;
+            reducers[action.type] = reducer;
+            return rootReducer;
+        };
+        rootReducer.property = function (name, reducer) {
+            if (!reducer) {
+                return;
+            }
+            if (propertyReducers[name]) {
+                throw new Error('Property reducer [' + name + '] duplicated!');
+            }
+            propertyReducers[name] = reducer;
+            properties.push(name);
+            return rootReducer;
+        };
         return rootReducer;
     };
-    rootReducer.property = function (name, reducer) {
-        if (!reducer) {
-            return;
-        }
-        if (propertyReducers[name]) {
-            throw new Error('Property reducer [' + name + '] duplicated!');
-        }
-        propertyReducers[name] = reducer;
-        properties.push(name);
-        return rootReducer;
+    var reducerCreator = reducerCreatorImpl;
+    var reducersCreator = reducersCreatorImpl;
+    var sagaCreatorImpl = function (action, handle) {
+        var saga = function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, effects_1.takeLatest(action.type, function (actionData) {
+                            var error_1;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        _a.trys.push([0, 2, , 3]);
+                                        return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
+                                    case 1:
+                                        _a.sent();
+                                        return [3 /*break*/, 3];
+                                    case 2:
+                                        error_1 = _a.sent();
+                                        setTimeout(function () {
+                                            throw error_1;
+                                        });
+                                        return [3 /*break*/, 3];
+                                    case 3: return [2 /*return*/];
+                                }
+                            });
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        };
+        return {
+            saga: saga,
+            handle: handle,
+        };
     };
-    return rootReducer;
-};
-exports.reducerCreator = reducerCreatorImpl;
-exports.reducersCreator = reducersCreatorImpl;
-var sagaCreatorImpl = function (action, handle) {
-    var saga = function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, effects_1.takeLatest(action.type, function (actionData) {
-                        var error_1;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    _a.trys.push([0, 2, , 3]);
-                                    return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
-                                case 1:
-                                    _a.sent();
-                                    return [3 /*break*/, 3];
-                                case 2:
-                                    error_1 = _a.sent();
-                                    setTimeout(function () {
-                                        throw error_1;
-                                    });
-                                    return [3 /*break*/, 3];
-                                case 3: return [2 /*return*/];
-                            }
-                        });
-                    })];
-                case 1:
-                    _a.sent();
-                    return [2 /*return*/];
-            }
-        });
+    var sagaEvenryCreatorImpl = function (action, handle) {
+        var saga = function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, effects_1.takeEvery(action.type, function (actionData) {
+                            var error_2;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        _a.trys.push([0, 2, , 3]);
+                                        return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
+                                    case 1:
+                                        _a.sent();
+                                        return [3 /*break*/, 3];
+                                    case 2:
+                                        error_2 = _a.sent();
+                                        setTimeout(function () {
+                                            throw error_2;
+                                        });
+                                        return [3 /*break*/, 3];
+                                    case 3: return [2 /*return*/];
+                                }
+                            });
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        };
+        return {
+            saga: saga,
+            handle: handle,
+        };
     };
+    var sagaThrottleCreatorImpl = function (action, time, handle) {
+        var saga = function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, effects_1.throttle(action.type, time, function (actionData) {
+                            var error_3;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        _a.trys.push([0, 2, , 3]);
+                                        return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
+                                    case 1:
+                                        _a.sent();
+                                        return [3 /*break*/, 3];
+                                    case 2:
+                                        error_3 = _a.sent();
+                                        setTimeout(function () {
+                                            throw error_3;
+                                        });
+                                        return [3 /*break*/, 3];
+                                    case 3: return [2 /*return*/];
+                                }
+                            });
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        };
+        return {
+            saga: saga,
+            handle: handle,
+        };
+    };
+    var sagaCreator = sagaCreatorImpl;
+    sagaCreator.every = sagaEvenryCreatorImpl;
+    sagaCreator.throttle = sagaThrottleCreatorImpl;
     return {
-        saga: saga,
-        handle: handle,
+        axr: axr,
+        axrCombine: axrCombine,
+        axrSetOptions: axrSetOptions,
+        axrGetOptions: axrGetOptions,
+        actionCreatorFactory: actionCreatorFactory,
+        actionCreator: actionCreator,
+        sagaCreator: sagaCreator,
+        reducerCreator: reducerCreator,
+        reducersCreator: reducersCreator,
     };
+    // tslint:enable
 };
-var sagaEvenryCreatorImpl = function (action, handle) {
-    var saga = function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, effects_1.takeEvery(action.type, function (actionData) {
-                        var error_2;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    _a.trys.push([0, 2, , 3]);
-                                    return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
-                                case 1:
-                                    _a.sent();
-                                    return [3 /*break*/, 3];
-                                case 2:
-                                    error_2 = _a.sent();
-                                    setTimeout(function () {
-                                        throw error_2;
-                                    });
-                                    return [3 /*break*/, 3];
-                                case 3: return [2 /*return*/];
-                            }
-                        });
-                    })];
-                case 1:
-                    _a.sent();
-                    return [2 /*return*/];
-            }
-        });
-    };
-    return {
-        saga: saga,
-        handle: handle,
-    };
-};
-var sagaThrottleCreatorImpl = function (action, time, handle) {
-    var saga = function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, effects_1.throttle(action.type, time, function (actionData) {
-                        var error_3;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    _a.trys.push([0, 2, , 3]);
-                                    return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
-                                case 1:
-                                    _a.sent();
-                                    return [3 /*break*/, 3];
-                                case 2:
-                                    error_3 = _a.sent();
-                                    setTimeout(function () {
-                                        throw error_3;
-                                    });
-                                    return [3 /*break*/, 3];
-                                case 3: return [2 /*return*/];
-                            }
-                        });
-                    })];
-                case 1:
-                    _a.sent();
-                    return [2 /*return*/];
-            }
-        });
-    };
-    return {
-        saga: saga,
-        handle: handle,
-    };
-};
-exports.sagaCreator = sagaCreatorImpl;
-exports.sagaCreator.every = sagaEvenryCreatorImpl;
-exports.sagaCreator.throttle = sagaThrottleCreatorImpl;
+// Export the default context
+exports.axr = (_a = exports.createASRContext(), _a.axr), exports.axrCombine = _a.axrCombine, exports.axrSetOptions = _a.axrSetOptions, exports.axrGetOptions = _a.axrGetOptions, exports.actionCreatorFactory = _a.actionCreatorFactory, exports.actionCreator = _a.actionCreator, exports.sagaCreator = _a.sagaCreator, exports.reducerCreator = _a.reducerCreator, exports.reducersCreator = _a.reducersCreator;
 //# sourceMappingURL=ASR.js.map

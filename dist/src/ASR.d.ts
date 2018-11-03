@@ -1,5 +1,3 @@
-export { axrSetOptions, axr, axrCombine } from './AXR';
-declare const stateGetter: () => any;
 export interface ASRReduxActionData {
     type: string;
 }
@@ -55,7 +53,7 @@ export interface ASRReducerCreator {
     <S>(initState: S, action: ASRAction<S>): (state: S, actionData: ASRReduxActionData) => S;
     <S, P>(initState: S, action: ASRAction<P>, reducer: ASRReducer<S, P>): (state: S, actionData: ASRReduxActionData) => S;
 }
-interface ASRCaseReducerCreator<S> {
+export interface ASRCaseReducerCreator<S> {
     (state: S, actionData: ASRReduxActionData): S;
     case(action: ASREmptyAction, reducer?: ASRReducer<S, void>): ASRCaseReducerCreator<S>;
     case(action: ASRAction<ASRAsyncActionPayload<any, S>>): ASRCaseReducerCreator<S>;
@@ -67,16 +65,17 @@ interface ASRCaseReducerCreator<S> {
 export interface ASRReducersCreator {
     <S>(initState: S): ASRCaseReducerCreator<S>;
 }
-export declare const actionCreatorFactory: (prefix?: string) => ASRActionCreator;
-export declare const actionCreator: ASRActionCreator;
-export declare const reducerCreator: ASRReducerCreator;
-export declare const reducersCreator: ASRReducersCreator;
+export declare enum EAsync {
+    STARTED = 1,
+    DONE = 2,
+    FAILED = 3
+}
 export interface ASRSaga {
     saga(): Iterator<any>;
     handle(): Iterator<any>;
 }
 export interface ASRSagaHandle<P> {
-    (payload: P, getter: typeof stateGetter, actionData: ASRActionData<P>): any;
+    (payload: P, getter: () => any, actionData: ASRActionData<P>): any;
 }
 export interface ASRSagaCreator {
     (action: ASREmptyAction, handle: ASRSagaHandle<void>): ASRSaga;
@@ -86,4 +85,15 @@ export interface ASRSagaCreator {
     throttle(action: ASREmptyAction, time: number, handle: ASRSagaHandle<void>): ASRSaga;
     throttle<P>(action: ASRAction<P>, time: number, handle: ASRSagaHandle<P>): ASRSaga;
 }
-export declare const sagaCreator: ASRSagaCreator;
+export declare const createASRContext: () => {
+    axr: import("./AXR").axr;
+    axrCombine: import("./AXR").axrCombine;
+    axrSetOptions: (options: import("./AXR").AXROptions) => void;
+    axrGetOptions: () => import("./AXR").AXROptions;
+    actionCreatorFactory: (prefix?: string) => ASRActionCreator;
+    actionCreator: ASRActionCreator;
+    sagaCreator: ASRSagaCreator;
+    reducerCreator: ASRReducerCreator;
+    reducersCreator: ASRReducersCreator;
+};
+export declare const axr: import("./AXR").axr, axrCombine: import("./AXR").axrCombine, axrSetOptions: (options: import("./AXR").AXROptions) => void, axrGetOptions: () => import("./AXR").AXROptions, actionCreatorFactory: (prefix?: string) => ASRActionCreator, actionCreator: ASRActionCreator, sagaCreator: ASRSagaCreator, reducerCreator: ASRReducerCreator, reducersCreator: ASRReducersCreator;
