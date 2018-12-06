@@ -323,4 +323,5 @@ exports.createASRContext = function () {
 };
 // Export the default context
 exports.axr = (_a = exports.createASRContext(), _a.axr), exports.axrCombine = _a.axrCombine, exports.axrSetOptions = _a.axrSetOptions, exports.axrGetOptions = _a.axrGetOptions, exports.actionCreatorFactory = _a.actionCreatorFactory, exports.actionCreator = _a.actionCreator, exports.sagaCreator = _a.sagaCreator, exports.reducerCreator = _a.reducerCreator, exports.reducersCreator = _a.reducersCreator;
+exports.default = 'Hello World';
 //# sourceMappingURL=ASR.js.map

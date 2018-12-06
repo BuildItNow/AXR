@@ -26,14 +26,14 @@ export interface ATRAsyncAction<A, P> {
 export interface ATREmptyAsyncAction<P> extends ATRAsyncAction<void, P> {
     (): Promise<P>;
 }
-export interface ATRAsyncThunk<A, P> {
-    (params: A, getter: () => any): Promise<P>;
+export interface ATRAsyncThunk<A, P, S = any> {
+    (params: A, getter: () => S): Promise<P>;
 }
-export interface ATRActionCreator {
+export interface ATRActionCreator<S = any> {
     (type: string): ATREmptyAction;
     <P>(type: string): ATRAction<P>;
-    async<P>(type: string, thunk: ATRAsyncThunk<void, P>): ATREmptyAsyncAction<P>;
-    async<A, P>(type: string, thunk: ATRAsyncThunk<A, P>): ATRAsyncAction<A, P>;
+    async<P>(type: string, thunk: ATRAsyncThunk<void, P, S>): ATREmptyAsyncAction<P>;
+    async<A, P>(type: string, thunk: ATRAsyncThunk<A, P, S>): ATRAsyncAction<A, P>;
 }
 export interface ATRReducer<S, P> {
     (state: S, payload: P, actionData: ATRActionData<P>): S;
@@ -66,10 +66,10 @@ export declare const createATRContext: () => {
     axrCombine: import("./AXR").axrCombine;
     axrSetOptions: (options: import("./AXR").AXROptions) => void;
     axrGetOptions: () => import("./AXR").AXROptions;
-    actionCreatorFactory: (prefix?: string) => ATRActionCreator;
-    actionCreator: ATRActionCreator;
+    actionCreatorFactory: (prefix?: string) => ATRActionCreator<any>;
+    actionCreator: ATRActionCreator<any>;
     reducerCreator: ATRReducerCreator;
     reducersCreator: ATRReducersCreator;
 };
-export declare const axr: import("./AXR").axr, axrCombine: import("./AXR").axrCombine, axrSetOptions: (options: import("./AXR").AXROptions) => void, axrGetOptions: () => import("./AXR").AXROptions, actionCreatorFactory: (prefix?: string) => ATRActionCreator, actionCreator: ATRActionCreator, reducerCreator: ATRReducerCreator, reducersCreator: ATRReducersCreator;
+export declare const axr: import("./AXR").axr, axrCombine: import("./AXR").axrCombine, axrSetOptions: (options: import("./AXR").AXROptions) => void, axrGetOptions: () => import("./AXR").AXROptions, actionCreatorFactory: (prefix?: string) => ATRActionCreator<any>, actionCreator: ATRActionCreator<any>, reducerCreator: ATRReducerCreator, reducersCreator: ATRReducersCreator;
 export {};

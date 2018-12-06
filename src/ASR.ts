@@ -102,17 +102,17 @@ export interface ASRSaga {
     handle(): Iterator<any>;
 }
 
-export interface ASRSagaHandle<P> {
-    (payload: P, getter: () => any, actionData: ASRActionData<P>);
+export interface ASRSagaHandle<P, S = any> {
+    (payload: P, getter: () => S, actionData: ASRActionData<P>);
 }
 
-export interface ASRSagaCreator {
-    (action: ASREmptyAction, handle: ASRSagaHandle<void>): ASRSaga;
-    <P>(action: ASRAction<P>, handle: ASRSagaHandle<P>): ASRSaga;
-    every(action: ASREmptyAction, handle: ASRSagaHandle<void>): ASRSaga;
-    every<P>(action: ASRAction<P>, handle: ASRSagaHandle<P>): ASRSaga;
-    throttle(action: ASREmptyAction, time: number, handle: ASRSagaHandle<void>): ASRSaga;
-    throttle<P>(action: ASRAction<P>, time: number, handle: ASRSagaHandle<P>): ASRSaga;
+export interface ASRSagaCreator<S = any> {
+    (action: ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
+    <P>(action: ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
+    every(action: ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
+    every<P>(action: ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
+    throttle(action: ASREmptyAction, time: number, handle: ASRSagaHandle<void, S>): ASRSaga;
+    throttle<P>(action: ASRAction<P>, time: number, handle: ASRSagaHandle<P, S>): ASRSaga;
 }
 
 export const createASRContext = () => {
@@ -388,3 +388,5 @@ export const {
     reducerCreator,
     reducersCreator,
 } = createASRContext();
+
+export default 'Hello World';

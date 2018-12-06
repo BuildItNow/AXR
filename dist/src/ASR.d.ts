@@ -74,16 +74,16 @@ export interface ASRSaga {
     saga(): Iterator<any>;
     handle(): Iterator<any>;
 }
-export interface ASRSagaHandle<P> {
-    (payload: P, getter: () => any, actionData: ASRActionData<P>): any;
+export interface ASRSagaHandle<P, S = any> {
+    (payload: P, getter: () => S, actionData: ASRActionData<P>): any;
 }
-export interface ASRSagaCreator {
-    (action: ASREmptyAction, handle: ASRSagaHandle<void>): ASRSaga;
-    <P>(action: ASRAction<P>, handle: ASRSagaHandle<P>): ASRSaga;
-    every(action: ASREmptyAction, handle: ASRSagaHandle<void>): ASRSaga;
-    every<P>(action: ASRAction<P>, handle: ASRSagaHandle<P>): ASRSaga;
-    throttle(action: ASREmptyAction, time: number, handle: ASRSagaHandle<void>): ASRSaga;
-    throttle<P>(action: ASRAction<P>, time: number, handle: ASRSagaHandle<P>): ASRSaga;
+export interface ASRSagaCreator<S = any> {
+    (action: ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
+    <P>(action: ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
+    every(action: ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
+    every<P>(action: ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
+    throttle(action: ASREmptyAction, time: number, handle: ASRSagaHandle<void, S>): ASRSaga;
+    throttle<P>(action: ASRAction<P>, time: number, handle: ASRSagaHandle<P, S>): ASRSaga;
 }
 export declare const createASRContext: () => {
     axr: import("./AXR").axr;
@@ -92,8 +92,10 @@ export declare const createASRContext: () => {
     axrGetOptions: () => import("./AXR").AXROptions;
     actionCreatorFactory: (prefix?: string) => ASRActionCreator;
     actionCreator: ASRActionCreator;
-    sagaCreator: ASRSagaCreator;
+    sagaCreator: ASRSagaCreator<any>;
     reducerCreator: ASRReducerCreator;
     reducersCreator: ASRReducersCreator;
 };
-export declare const axr: import("./AXR").axr, axrCombine: import("./AXR").axrCombine, axrSetOptions: (options: import("./AXR").AXROptions) => void, axrGetOptions: () => import("./AXR").AXROptions, actionCreatorFactory: (prefix?: string) => ASRActionCreator, actionCreator: ASRActionCreator, sagaCreator: ASRSagaCreator, reducerCreator: ASRReducerCreator, reducersCreator: ASRReducersCreator;
+export declare const axr: import("./AXR").axr, axrCombine: import("./AXR").axrCombine, axrSetOptions: (options: import("./AXR").AXROptions) => void, axrGetOptions: () => import("./AXR").AXROptions, actionCreatorFactory: (prefix?: string) => ASRActionCreator, actionCreator: ASRActionCreator, sagaCreator: ASRSagaCreator<any>, reducerCreator: ASRReducerCreator, reducersCreator: ASRReducersCreator;
+declare const _default: "Hello World";
+export default _default;
