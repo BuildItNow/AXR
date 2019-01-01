@@ -75,12 +75,16 @@ export interface ASRReducerCreator {
 
 export interface ASRCaseReducerCreator<S> {
     (state: S, actionData: ASRReduxActionData): S;
-    
+    case(action: () => ASREmptyAction, reducer?: ASRReducer<S, void>): ASRCaseReducerCreator<S>;
+    case(action: () => ASRAction<ASRAsyncActionPayload<any, S>>): ASRCaseReducerCreator<S>;
+    case(action: () => ASRAction<ASRAsyncActionFailedPayload<any, S>>): ASRCaseReducerCreator<S>;
+    case(action: () => ASRAction<S>): ASRCaseReducerCreator<S>;    
+    case<P>(action: () => ASRAction<P>, reducer: ASRReducer<S, P>): ASRCaseReducerCreator<S>;
+
     case(action: ASREmptyAction, reducer?: ASRReducer<S, void>): ASRCaseReducerCreator<S>;
     case(action: ASRAction<ASRAsyncActionPayload<any, S>>): ASRCaseReducerCreator<S>;
     case(action: ASRAction<ASRAsyncActionFailedPayload<any, S>>): ASRCaseReducerCreator<S>;
     case(action: ASRAction<S>): ASRCaseReducerCreator<S>;
-    
     case<P>(action: ASRAction<P>, reducer: ASRReducer<S, P>): ASRCaseReducerCreator<S>;
 
     property<PS>(name: string, reducer: (state: PS, actionData: ASRReduxActionData) => PS)
@@ -107,10 +111,18 @@ export interface ASRSagaHandle<P, S = any> {
 }
 
 export interface ASRSagaCreator<S = any> {
+    (action: () => ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
+    <P>(action: () => ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
     (action: ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
     <P>(action: ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
+    
+    every(action: () => ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
+    every<P>(action: () => ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
     every(action: ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
     every<P>(action: ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
+    
+    throttle(action: () => ASREmptyAction, time: number, handle: ASRSagaHandle<void, S>): ASRSaga;
+    throttle<P>(action: () => ASRAction<P>, time: number, handle: ASRSagaHandle<P, S>): ASRSaga;
     throttle(action: ASREmptyAction, time: number, handle: ASRSagaHandle<void, S>): ASRSaga;
     throttle<P>(action: ASRAction<P>, time: number, handle: ASRSagaHandle<P, S>): ASRSaga;
 }
@@ -217,6 +229,7 @@ export const createASRContext = () => {
     };
     
     const reducersCreatorImpl = (initState) => {
+        let dyncReducers;
         const reducers = {};
         const propertyReducers = {};
         const properties: string[] = [];
@@ -251,6 +264,14 @@ export const createASRContext = () => {
         };
     
         const rootReducer: any = (state, actionData) => {
+            // Setup the dynamic reducers
+            if (dyncReducers) {
+                for (let i = 0, iz = dyncReducers.length; i < iz; i += 2) {
+                    reducers[dyncReducers[i]().type] = dyncReducers[i + 1];
+                }
+                dyncReducers = undefined!;
+            }
+
             if (state === undefined) {
                 initPartialState(initState, actionData);
                 return initState;
@@ -276,8 +297,17 @@ export const createASRContext = () => {
     
         rootReducer.case = (action, reducer) => {
             reducer = reducer || 0;
-            reducers[action.type] = reducer;
-    
+
+            if (action.type) {
+                reducers[action.type] = reducer;
+            } else {
+                if (!dyncReducers) {
+                    dyncReducers = [];
+                }
+
+                dyncReducers.push(action, reducer);
+            }
+            
             return rootReducer;
         };
     
@@ -304,7 +334,8 @@ export const createASRContext = () => {
     
     const sagaCreatorImpl = (action, handle) => {
         const saga = function*() {
-            yield takeLatest(action.type, function*(actionData: ASRActionData<any>) {
+            const type = action.type ? action.type : action().type;
+            yield takeLatest(type, function*(actionData: ASRActionData<any>) {
                 try {
                     yield handle(actionData.payload, stateGetter, actionData);
                 } catch (error) {
@@ -322,7 +353,8 @@ export const createASRContext = () => {
     
     const sagaEvenryCreatorImpl = (action, handle) => {
         const saga = function*() {
-            yield takeEvery(action.type, function*(actionData: ASRActionData<any>) {
+            const type = action.type ? action.type : action().type;
+            yield takeEvery(type, function*(actionData: ASRActionData<any>) {
                 try {
                     yield handle(actionData.payload, stateGetter, actionData);
                 } catch (error) {
@@ -341,7 +373,8 @@ export const createASRContext = () => {
     
     const sagaThrottleCreatorImpl = (action, time, handle) => {
         const saga = function*() {
-            yield throttle(action.type, time, function*(actionData: ASRActionData<any>) {
+            const type = action.type ? action.type : action().type;
+            yield throttle(type, time, function*(actionData: ASRActionData<any>) {
                 try {
                     yield handle(actionData.payload, stateGetter, actionData);
                 } catch (error) {

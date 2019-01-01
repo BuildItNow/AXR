@@ -55,6 +55,11 @@ export interface ASRReducerCreator {
 }
 export interface ASRCaseReducerCreator<S> {
     (state: S, actionData: ASRReduxActionData): S;
+    case(action: () => ASREmptyAction, reducer?: ASRReducer<S, void>): ASRCaseReducerCreator<S>;
+    case(action: () => ASRAction<ASRAsyncActionPayload<any, S>>): ASRCaseReducerCreator<S>;
+    case(action: () => ASRAction<ASRAsyncActionFailedPayload<any, S>>): ASRCaseReducerCreator<S>;
+    case(action: () => ASRAction<S>): ASRCaseReducerCreator<S>;
+    case<P>(action: () => ASRAction<P>, reducer: ASRReducer<S, P>): ASRCaseReducerCreator<S>;
     case(action: ASREmptyAction, reducer?: ASRReducer<S, void>): ASRCaseReducerCreator<S>;
     case(action: ASRAction<ASRAsyncActionPayload<any, S>>): ASRCaseReducerCreator<S>;
     case(action: ASRAction<ASRAsyncActionFailedPayload<any, S>>): ASRCaseReducerCreator<S>;
@@ -78,10 +83,16 @@ export interface ASRSagaHandle<P, S = any> {
     (payload: P, getter: () => S, actionData: ASRActionData<P>): any;
 }
 export interface ASRSagaCreator<S = any> {
+    (action: () => ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
+    <P>(action: () => ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
     (action: ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
     <P>(action: ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
+    every(action: () => ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
+    every<P>(action: () => ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
     every(action: ASREmptyAction, handle: ASRSagaHandle<void, S>): ASRSaga;
     every<P>(action: ASRAction<P>, handle: ASRSagaHandle<P, S>): ASRSaga;
+    throttle(action: () => ASREmptyAction, time: number, handle: ASRSagaHandle<void, S>): ASRSaga;
+    throttle<P>(action: () => ASRAction<P>, time: number, handle: ASRSagaHandle<P, S>): ASRSaga;
     throttle(action: ASREmptyAction, time: number, handle: ASRSagaHandle<void, S>): ASRSaga;
     throttle<P>(action: ASRAction<P>, time: number, handle: ASRSagaHandle<P, S>): ASRSaga;
 }

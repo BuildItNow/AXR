@@ -128,6 +128,7 @@ exports.createASRContext = function () {
         };
     };
     var reducersCreatorImpl = function (initState) {
+        var dyncReducers;
         var reducers = {};
         var propertyReducers = {};
         var properties = [];
@@ -156,6 +157,13 @@ exports.createASRContext = function () {
             return newState === undefined ? state : newState;
         };
         var rootReducer = function (state, actionData) {
+            // Setup the dynamic reducers
+            if (dyncReducers) {
+                for (var i = 0, iz = dyncReducers.length; i < iz; i += 2) {
+                    reducers[dyncReducers[i]().type] = dyncReducers[i + 1];
+                }
+                dyncReducers = undefined;
+            }
             if (state === undefined) {
                 initPartialState(initState, actionData);
                 return initState;
@@ -182,7 +190,15 @@ exports.createASRContext = function () {
         };
         rootReducer.case = function (action, reducer) {
             reducer = reducer || 0;
-            reducers[action.type] = reducer;
+            if (action.type) {
+                reducers[action.type] = reducer;
+            }
+            else {
+                if (!dyncReducers) {
+                    dyncReducers = [];
+                }
+                dyncReducers.push(action, reducer);
+            }
             return rootReducer;
         };
         rootReducer.property = function (name, reducer) {
@@ -202,28 +218,31 @@ exports.createASRContext = function () {
     var reducersCreator = reducersCreatorImpl;
     var sagaCreatorImpl = function (action, handle) {
         var saga = function () {
+            var type;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, effects_1.takeLatest(action.type, function (actionData) {
-                            var error_1;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        _a.trys.push([0, 2, , 3]);
-                                        return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
-                                    case 1:
-                                        _a.sent();
-                                        return [3 /*break*/, 3];
-                                    case 2:
-                                        error_1 = _a.sent();
-                                        setTimeout(function () {
-                                            throw error_1;
-                                        });
-                                        return [3 /*break*/, 3];
-                                    case 3: return [2 /*return*/];
-                                }
-                            });
-                        })];
+                    case 0:
+                        type = action.type ? action.type : action().type;
+                        return [4 /*yield*/, effects_1.takeLatest(type, function (actionData) {
+                                var error_1;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            _a.trys.push([0, 2, , 3]);
+                                            return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
+                                        case 1:
+                                            _a.sent();
+                                            return [3 /*break*/, 3];
+                                        case 2:
+                                            error_1 = _a.sent();
+                                            setTimeout(function () {
+                                                throw error_1;
+                                            });
+                                            return [3 /*break*/, 3];
+                                        case 3: return [2 /*return*/];
+                                    }
+                                });
+                            })];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -237,28 +256,31 @@ exports.createASRContext = function () {
     };
     var sagaEvenryCreatorImpl = function (action, handle) {
         var saga = function () {
+            var type;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, effects_1.takeEvery(action.type, function (actionData) {
-                            var error_2;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        _a.trys.push([0, 2, , 3]);
-                                        return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
-                                    case 1:
-                                        _a.sent();
-                                        return [3 /*break*/, 3];
-                                    case 2:
-                                        error_2 = _a.sent();
-                                        setTimeout(function () {
-                                            throw error_2;
-                                        });
-                                        return [3 /*break*/, 3];
-                                    case 3: return [2 /*return*/];
-                                }
-                            });
-                        })];
+                    case 0:
+                        type = action.type ? action.type : action().type;
+                        return [4 /*yield*/, effects_1.takeEvery(type, function (actionData) {
+                                var error_2;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            _a.trys.push([0, 2, , 3]);
+                                            return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
+                                        case 1:
+                                            _a.sent();
+                                            return [3 /*break*/, 3];
+                                        case 2:
+                                            error_2 = _a.sent();
+                                            setTimeout(function () {
+                                                throw error_2;
+                                            });
+                                            return [3 /*break*/, 3];
+                                        case 3: return [2 /*return*/];
+                                    }
+                                });
+                            })];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -272,28 +294,31 @@ exports.createASRContext = function () {
     };
     var sagaThrottleCreatorImpl = function (action, time, handle) {
         var saga = function () {
+            var type;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, effects_1.throttle(action.type, time, function (actionData) {
-                            var error_3;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        _a.trys.push([0, 2, , 3]);
-                                        return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
-                                    case 1:
-                                        _a.sent();
-                                        return [3 /*break*/, 3];
-                                    case 2:
-                                        error_3 = _a.sent();
-                                        setTimeout(function () {
-                                            throw error_3;
-                                        });
-                                        return [3 /*break*/, 3];
-                                    case 3: return [2 /*return*/];
-                                }
-                            });
-                        })];
+                    case 0:
+                        type = action.type ? action.type : action().type;
+                        return [4 /*yield*/, effects_1.throttle(type, time, function (actionData) {
+                                var error_3;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            _a.trys.push([0, 2, , 3]);
+                                            return [4 /*yield*/, handle(actionData.payload, stateGetter, actionData)];
+                                        case 1:
+                                            _a.sent();
+                                            return [3 /*break*/, 3];
+                                        case 2:
+                                            error_3 = _a.sent();
+                                            setTimeout(function () {
+                                                throw error_3;
+                                            });
+                                            return [3 /*break*/, 3];
+                                        case 3: return [2 /*return*/];
+                                    }
+                                });
+                            })];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
