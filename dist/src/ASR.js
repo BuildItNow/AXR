@@ -299,7 +299,7 @@ exports.createASRContext = function () {
                 switch (_a.label) {
                     case 0:
                         type = action.type ? action.type : action().type;
-                        return [4 /*yield*/, effects_1.throttle(type, time, function (actionData) {
+                        return [4 /*yield*/, effects_1.throttle(time, type, function (actionData) {
                                 var error_3;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {

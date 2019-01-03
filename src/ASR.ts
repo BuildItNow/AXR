@@ -374,7 +374,7 @@ export const createASRContext = () => {
     const sagaThrottleCreatorImpl = (action, time, handle) => {
         const saga = function*() {
             const type = action.type ? action.type : action().type;
-            yield throttle(type, time, function*(actionData: ASRActionData<any>) {
+            yield throttle(time, type, function*(actionData: ASRActionData<any>) {
                 try {
                     yield handle(actionData.payload, stateGetter, actionData);
                 } catch (error) {
