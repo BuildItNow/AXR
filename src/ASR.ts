@@ -73,8 +73,7 @@ export interface ASRReducerCreator {
         : (state: S, actionData: ASRReduxActionData) => S;
 }
 
-export interface ASRCaseReducerCreator<S> {
-    (state: S, actionData: ASRReduxActionData): S;
+export interface ASRCaseReducerPartial<S> {
     case(action: () => ASREmptyAction, reducer?: ASRReducer<S, void>): ASRCaseReducerCreator<S>;
     case(action: () => ASRAction<ASRAsyncActionPayload<any, S>>): ASRCaseReducerCreator<S>;
     case(action: () => ASRAction<ASRAsyncActionFailedPayload<any, S>>): ASRCaseReducerCreator<S>;
@@ -86,13 +85,23 @@ export interface ASRCaseReducerCreator<S> {
     case(action: ASRAction<ASRAsyncActionFailedPayload<any, S>>): ASRCaseReducerCreator<S>;
     case(action: ASRAction<S>): ASRCaseReducerCreator<S>;
     case<P>(action: ASRAction<P>, reducer: ASRReducer<S, P>): ASRCaseReducerCreator<S>;
+}
 
+export interface ASRCaseReducerCreator<S> extends ASRCaseReducerPartial<S> {
+    (state: S, actionData: ASRReduxActionData): S;
+    
     property<PS>(name: string, reducer: (state: PS, actionData: ASRReduxActionData) => PS)
         : ASRCaseReducerCreator<S>;
+
+    partial(partial: ASRCaseReducerPartial<S>): ASRCaseReducerCreator<S>;
 }
 
 export interface ASRReducersCreator {
     <S>(initState: S): ASRCaseReducerCreator<S>;
+}
+
+export interface ASRReducersPartial {
+    <S>(): ASRCaseReducerPartial<S>;
 }
 
 export enum EAsync {
@@ -129,7 +138,7 @@ export interface ASRSagaCreator<S = any> {
 
 export const createASRContext = () => {
     // tslint:disable:no-shadowed-variable
-    const { axrGetOptions, axrSetOptions, axr, axrCombine } = createContext();
+    const { axrGetOptions, axrSetOptions, axr, axrPartial, axrCombine } = createContext();
 
     const stateGetter = () => {
         return axrGetOptions().getState();
@@ -325,13 +334,41 @@ export const createASRContext = () => {
     
             return rootReducer;
         };
+
+        rootReducer.partial = (partial) => {
+            const a = partial.actions;
+            const r = partial.reducers;
+
+            for (let i = 0, iz = a.length; i < iz; ++i) {
+                rootReducer.case(a[i], r[i]);
+            }
+
+            return rootReducer;
+        };
     
         return rootReducer;
+    };
+
+    const reducersPartialImpl = () => {
+        const partial: any = {
+            actions: [],
+            reducers: [],
+        };
+
+        partial.case = (action, reducer) => {
+            partial.actions.push(action);
+            partial.reducers.push(reducer);
+
+            return partial;
+        };
+
+        return partial;
     };
     
     const reducerCreator: ASRReducerCreator = reducerCreatorImpl as any;
     const reducersCreator: ASRReducersCreator = reducersCreatorImpl as any;
-    
+    const reducersPartial: ASRReducersPartial = reducersPartialImpl as any;
+
     const sagaCreatorImpl = (action, handle) => {
         const saga = function*() {
             const type = action.type ? action.type : action().type;
@@ -397,6 +434,7 @@ export const createASRContext = () => {
 
     return {
         axr,
+        axrPartial,
         axrCombine,
         axrSetOptions,
         axrGetOptions,
@@ -405,6 +443,7 @@ export const createASRContext = () => {
         sagaCreator,
         reducerCreator,
         reducersCreator,
+        reducersPartial,
     };
     // tslint:enable
 };
@@ -412,6 +451,7 @@ export const createASRContext = () => {
 // Export the default context
 export const {
     axr,
+    axrPartial,
     axrCombine,
     axrSetOptions,
     axrGetOptions,
@@ -420,6 +460,5 @@ export const {
     sagaCreator,
     reducerCreator,
     reducersCreator,
+    reducersPartial,
 } = createASRContext();
-
-export default 'Hello World';

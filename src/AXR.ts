@@ -2,6 +2,10 @@ export interface axr {
     <A, X, R>(action: A, handler?: X, reducer?: R): { action: A, handler: X, reducer: R };
 }
 
+export interface axrPartial {
+    <A, X, P>(action: A, handler?: X, partial?: P): { action: A, handler: X } & P;
+}
+
 export interface axrCombine {
     <A>(a: A): A;
     <A0, A1>(a0: A0, a1: A1): A0 & A1;
@@ -45,6 +49,15 @@ export const createContext = () => {
             action: action || {},
             handler: handler || [],
             reducer: reducer || {},
+        };
+    };
+
+    const axrPartialImpl = (action, handler, partial) => {
+        return {
+            action: action || {},
+            handler: handler || [],
+            reducer: {},
+            ...partial,
         };
     };
     
@@ -121,6 +134,7 @@ export const createContext = () => {
     
     // tslint:disable:no-shadowed-variable
     const axr: axr = axrImpl;
+    const axrPartial: axrPartial = axrPartialImpl;
     const axrCombine: axrCombine = axrCombineImpl;
     // tslint:enable
     
@@ -140,6 +154,7 @@ export const createContext = () => {
     return {
         axr,
         axrCombine,
+        axrPartial,
         axrSetOptions,
         axrGetOptions,
     };
